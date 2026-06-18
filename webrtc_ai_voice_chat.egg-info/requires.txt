@@ -1,0 +1,10 @@
+aiohttp<4,>=3.13
+aiortc<2,>=1.14
+av<17,>=14
+langchain-core<2,>=1
+langchain-ollama<2,>=1.1
+librosa<1,>=0.11
+numpy<3,>=2.2
+scipy<2,>=1.15
+torch<3,>=2.11
+transformers<5,>=4.57

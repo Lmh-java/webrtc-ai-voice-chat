@@ -22,9 +22,6 @@ dependencies = [
     "transformers>=4.57,<5",
 ]
 
-[project.scripts]
-webrtc-ai-voice-chat = "server:main"
-
 [tool.setuptools]
 py-modules = [
     "audio_utils",

@@ -6,6 +6,7 @@ import os
 import ssl
 import threading
 from asyncio import create_task, AbstractEventLoop
+from pathlib import Path
 from typing import Optional
 
 from aiohttp import web
@@ -17,7 +18,7 @@ from chain import Chain
 from state import State
 
 logger = logging.getLogger("pc")
-ROOT = os.path.dirname(__file__)
+ROOT = Path(__file__).parent
 
 pcs = set()
 
@@ -27,17 +28,17 @@ chain: Optional[Chain] = None
 
 
 async def index(request):
-    content = open(os.path.join(ROOT, "index.html"), "r").read()
+    content = (ROOT / "index.html").read_text()
     return web.Response(content_type="text/html", text=content)
 
 
 async def javascript(request):
-    content = open(os.path.join(ROOT, "client.js"), "r").read()
+    content = (ROOT / "client.js").read_text()
     return web.Response(content_type="application/javascript", text=content)
 
 
 async def css(request):
-    content = open(os.path.join(ROOT, "styles.css"), "r").read()
+    content = (ROOT / "styles.css").read_text()
     return web.Response(content_type="text/css", text=content)
 
 
@@ -61,6 +62,8 @@ async def offer(request):
 
     async def record():
         track = state.track
+        if track is None:
+            return
         state.log_info("Recording %s", state.filename)
         while True:
             frame: AudioFrame = await track.recv()
@@ -80,7 +83,8 @@ async def offer(request):
         @track.on("ended")
         async def on_ended():
             state.log_info("Track %s ended", track.kind)
-            state.task.cancel()
+            if state.task is not None:
+                state.task.cancel()
             track.stop()
 
     # handle offer
@@ -98,30 +102,36 @@ async def offer(request):
         @channel.on("message")
         async def on_message(message):
             state.log_info("Received message on channel: %s", message)
+            if not isinstance(message, str):
+                return
             if message == "get_response":
                 state.response_player.response_ready = True
-            if message == "get_silence":
+            elif message == "get_silence":
                 state.response_player.response_ready = False
-            if message == "start_recording":
+            elif message == "start_recording":
                 state.log_info("Start Recording")
                 state.response_player.response_ready = False
                 state.buffer = []
                 state.recording = True
                 state.counter += 1
                 state.filename = f"{state.id}_{state.counter}.wav"
-            if message == "stop_recording":
+            elif message == "stop_recording":
                 state.log_info("Stop Recording")
                 state.recording = False
                 await asyncio.sleep(0.5)
                 data = state.flush_audio()
                 process_loop = create_bg_loop()
                 asyncio.run_coroutine_threadsafe(process_request(data), process_loop)
-            if message[0:7] == "preset:":
+            elif message.startswith("preset:"):
                 preset = message[7:]
+                if bark is None:
+                    return
                 bark.set_voice_preset(preset)
                 state.log_info("Changed voice preset to %s", preset)
-            if message[0:6] == "model:":
+            elif message.startswith("model:"):
                 model = message[6:]
+                if chain is None:
+                    return
                 chain.set_model(model)
                 state.log_info("Changed model to %s", model)
 
@@ -139,6 +149,8 @@ async def offer(request):
 
         async def transcribe_request(data):
             response = None
+            if whisper is None or chain is None:
+                raise RuntimeError("Application models are not initialized")
             transcription = whisper.transcribe(data)
             channel.send(f"Human: {transcription[0]}")
             state.log_info(transcription[0])
@@ -156,6 +168,8 @@ async def offer(request):
 
         async def synthesize_response(response):
             if len(response.strip()) > 0:
+                if bark is None:
+                    raise RuntimeError("Bark model is not initialized")
                 channel.send(f"AI: {response}")
                 await asyncio.sleep(0)
                 bark.synthesize(response)
@@ -177,11 +191,11 @@ async def on_shutdown(app):
     # close peer connections
     coros = [state.pc.close() for state in pcs]
     for state in pcs:
-        deleteFile(state.filename)
+        delete_file(state.filename)
     await asyncio.gather(*coros)
 
 
-def deleteFile(filename):
+def delete_file(filename):
     try:
         os.remove(filename)
     except OSError:
@@ -209,7 +223,9 @@ def create_bg_loop():
     return new_loop
 
 
-if __name__ == "__main__":
+def main():
+    global bark, chain, whisper
+
     parser = argparse.ArgumentParser(description="WebRTC AI Voice Chat")
     parser.add_argument("--cert-file", help="SSL certificate file (for HTTPS)")
     parser.add_argument("--key-file", help="SSL key file (for HTTPS)")
@@ -252,7 +268,7 @@ if __name__ == "__main__":
         bark = Bark()
 
     if args.cert_file:
-        ssl_context = ssl.SSLContext()
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ssl_context.load_cert_chain(args.cert_file, args.key_file)
     else:
         ssl_context = None
@@ -264,3 +280,7 @@ if __name__ == "__main__":
     app.router.add_get("/styles.css", css)
     app.router.add_post("/offer", offer)
     web.run_app(app, host=args.host, port=args.port, ssl_context=ssl_context)
+
+
+if __name__ == "__main__":
+    main()

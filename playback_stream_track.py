@@ -7,15 +7,15 @@ from aiortc.contrib.media import MediaPlayer
 
 class PlaybackStreamTrack(MediaStreamTrack):
     kind = "audio"
-    response_ready: bool = False
-    previous_response_silence: bool = False
-    track: MediaStreamTrack = None
-    counter: int = 0
-    time: float = 0.0
-    channel: Optional[RTCDataChannel] = None
 
     def __init__(self):
         super().__init__()  # don't forget this!
+        self.response_ready: bool = False
+        self.previous_response_silence: bool = False
+        self.track: Optional[MediaStreamTrack] = None
+        self.counter: int = 0
+        self.time: float = 0.0
+        self.channel: Optional[RTCDataChannel] = None
 
     def select_track(self):
         if self.response_ready:
@@ -38,7 +38,7 @@ class PlaybackStreamTrack(MediaStreamTrack):
         try:
             async with asyncio.timeout(1):
                 frame = await self.track.recv()
-        except Exception as e:
+        except Exception:
             self.select_track()
             if self.response_ready:
                 self.response_ready = False

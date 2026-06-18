@@ -1,6 +1,6 @@
-from langchain_core.prompts.prompt import PromptTemplate
-from langchain_community.chat_models import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_ollama import ChatOllama
 
 
 class Chain:

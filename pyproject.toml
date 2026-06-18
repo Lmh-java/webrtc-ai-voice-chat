@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "webrtc-ai-voice-chat"
+version = "0.1.0"
+description = "WebRTC AI voice chat demo using Whisper, Ollama, LangChain, and Bark."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+    "aiohttp>=3.13,<4",
+    "aiortc>=1.14,<2",
+    "av>=14,<17",
+    "langchain-core>=1,<2",
+    "langchain-ollama>=1.1,<2",
+    "librosa>=0.11,<1",
+    "numpy>=2.2,<3",
+    "scipy>=1.15,<2",
+    "torch>=2.11,<3",
+    "transformers>=4.57,<5",
+]
+
+[tool.setuptools]
+py-modules = [
+    "audio_utils",
+    "chain",
+    "playback_stream_track",
+    "server",
+    "state",
+]

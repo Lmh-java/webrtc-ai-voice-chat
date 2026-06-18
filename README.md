@@ -12,12 +12,31 @@ The goal of this project is to demo `speech <-> langchain <-> audio` workflow.
 
 For interesting projects and related resources, checkout the [Awesome Projects Page](AwesomeProjects.md).
 
+Setup
+-----
+
+This project targets Python 3.11 or newer and declares its runtime dependencies in `pyproject.toml`.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Start Ollama with the chat model you want to use, then run the demo server:
+
+```bash
+python server.py --ollama-host http://localhost:11434
+```
+
+Open `http://localhost:8080` in a browser. Use `--cert-file` and `--key-file` if you need HTTPS.
+
 Demo
 ----
 
 Unmute the audio to hear responses  
 
 https://github.com/lalanikarim/webrtc-ai-voice-chat/assets/1296705/7aa05d6f-ff05-4c72-b2e8-6e4e1119a68c
-
 
 
